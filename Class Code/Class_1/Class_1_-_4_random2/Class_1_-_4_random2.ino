@@ -1,3 +1,5 @@
+//Randomly decide waht LED to blink at a set rate
+
 int led1_output;
 int led2_output;
 long current_time;
@@ -31,18 +33,19 @@ void loop() {
         led2_output = 0;
       }
 
-      led_sel = random(10);
+      //get a random number from 0-9 and use it to decide which LED to turn on
+      led_sel = random(10); 
 
-      if (led_sel < 4) {
+      if (led_sel < 4) { //if it's 0-3
         digitalWrite(10, led2_output);
       }
-      else{
+      else{//if it's 4 or greater
         digitalWrite(9, led2_output);
       }
 
     } //end of led2 timing if
 
-
+    //this part is only printing the lde1_output value now
     if (current_time - prev_time > 500) {
       prev_time = current_time;
 
