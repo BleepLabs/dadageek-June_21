@@ -10,6 +10,7 @@ long prev_time2;
 int button_read;
 int prev_button_read;
 int latch1 = 0;
+int lfo_latch;
 
 int button_pin = 5;
 int led_pin1 = 10;
@@ -57,11 +58,24 @@ void loop() {
         led2_output = 0;
         }
       */
-      
+
       //exponetial growth
-      led2_output *= 1.01;
+
+      if (lfo_latch == 1) {
+        led2_output *= 1.01;
+      }
+      
+      if (lfo_latch == 0) {
+        led2_output *= .99;
+      }
+
       if (led2_output > 255) {
+        led2_output = 255;
+        lfo_latch = 0;
+      }
+      if (led2_output < 1) {
         led2_output = 1;
+        lfo_latch = 1;
       }
 
       Serial.println(led2_output);
@@ -80,18 +94,18 @@ void loop() {
         led1_output = 0;
       }
 
-      analogWrite(led_pin1, led1_output*5);//output can be 0-255 so 64 is about 1/4 bright
+      analogWrite(led_pin1, led1_output * 5); //output can be 0-255 so 64 is about 1/4 bright
 
     } //end of led1 timing if
 
   } //end of button if
 
   //if the button is not being pressed do this
-  
+
   else {
     //turn both LEDs off
-    analogWrite(9, 0);
-    analogWrite(10, 0);
+    analogWrite(led_pin1, 0);
+    analogWrite(led_pin2, 0);
   }
 
 } //end of loop
