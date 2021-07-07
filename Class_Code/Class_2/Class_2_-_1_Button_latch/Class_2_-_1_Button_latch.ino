@@ -1,7 +1,6 @@
-//Blink two LEDs at separate rates when a button is pressed
+//The single button will latch the light on or off when pressed
+// instead of having them only on while the button is being held down
 
-//To have a second LED blinking at a rate different than the first one
-// we need separate variables for everything
 int led1_output;
 int led2_output;
 long current_time;
@@ -9,31 +8,40 @@ long prev_time;
 long prev_time2;
 int button_read;
 int prev_button_read;
-int latch1 = 1;
+int latch1 = 1; //we can initialize a variable with any value
 
-int button_pin = 5;
+int button_pin = 5; //making these variables lets us refer to them with words rather than a pin number that we might not remember
 int led_pin1 = 10;
+int led_pin2 = 9;
 
 void setup() {
-  //same setup as before
   pinMode(button_pin, INPUT_PULLUP);
-  pinMode(9, OUTPUT);
+  pinMode(led_pin2, OUTPUT);
   pinMode(led_pin1, OUTPUT);
+
 }
 
 void loop() {
   current_time = millis();
 
-  //Read the pin and see if it's connected to 3.3V or 0V
-  // by default it is "pulled high" to 3.3V
-  // so its returns 0 when button is pressed
-  // and 1 when not pressed
+  //Before we update button_read by checking if the pin is high or low
+  // we remember what it was last loop. This allow us to see if there was a change
   prev_button_read = button_read;
   button_read = digitalRead(button_pin);
 
-  if (prev_button_read == 1 && button_read == 0) {
-    //Serial.println("Howdy!");
+  /*
+    The code in this "if" will only happen if the button was not being pressed and then it was aka the falling edge
+    Buttons have four states: 
+    Not being pressed. digitalRead(button_pin) returns 1
+    Being pressed. digitalRead(button_pin) returns 0
+    Falling. Was NOT being pressed last loop but IS pressed this loop
+    Rising. WAS being pressed last loop but IS NOT pressed this loop
+  */
+  
+  if (prev_button_read == 1 && button_read == 0) { //did the button fall?
+    Serial.println("Howdy!"); //print these characters inside the " "
 
+    //Just like flipping the LED back and forth, we can use if and else to flip the latch so it stays at a value
     if (latch1 == 0) {
       latch1 = 1;
     }
@@ -43,8 +51,6 @@ void loop() {
 
   }
 
-
-  // only do what's inside these {} when the button is pressed
   if (latch1 == 0) {
 
     //same as before but now it's prev_time2,led2_output, and pin 10

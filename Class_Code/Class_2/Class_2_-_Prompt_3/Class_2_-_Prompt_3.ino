@@ -1,8 +1,10 @@
-//Blink two LEDs at separate rates when a button is pressed
+/*
+  The first two pots control the individual blink rates
+  The third pot controls both their brightness levels
 
-//To have a second LED blinking at a rate different than the first one
-// we need separate variables for everything
-float led1_output = 1;
+*/
+
+float led1_output = 1; //floats can store decimal numbers
 float led2_output = 1;
 long current_time;
 long prev_time;
@@ -37,14 +39,11 @@ void loop() {
     pot1 = analogRead(A0); //0-1023 input range
     pot2 = analogRead(A1);
     pot3 = analogRead(A2);
-    max_bright = pot3 / 1023.0;
-    Serial.println(expo_control);
+    //we want max_bright to go from 0-1.0. This will give us a flexible value to work with
+    max_bright = (pot3 / 1023.0); //dividing by 1023 makes it 0-1.0
+    
+    Serial.println(max_bright);
   }
-
-  //Read the pin and see if it's connected to 3.3V or 0V
-  // by default it is "pulled high" to 3.3V
-  // so its returns 0 when button is pressed
-  // and 1 when not pressed
 
   prev_button_read = button_read;
   button_read = digitalRead(button_pin);
@@ -59,30 +58,21 @@ void loop() {
     }
   }
 
-  // only do what's inside these {} when the button is pressed
   if (latch1 == 0) {
 
     //same as before but now it's prev_time2,led2_output, and pin 10
     if (current_time - prev_time2 > 10) {
       prev_time2 = current_time;
-      /* Linear LFO
-        led2_output++; //led1_output=led1_output+1
-
-        if (led2_output > 255) {
-        led2_output = 0;
-        }
-      */
 
       //exponetial growth
-
       expo_control = (pot2 / 1023.0); //1023 is the max so div by that to get 0-1.0
 
       if (lfo_latch == 1) {
-        led2_output *= 1.0 + expo_control;
+        led2_output *= 1.0 + expo_control; //rising
       }
 
       if (lfo_latch == 0) {
-        led2_output *= 1.0 - expo_control;
+        led2_output *= 1.0 - expo_control; //falling
       }
 
       if (led2_output > 255) {
@@ -94,9 +84,8 @@ void loop() {
         lfo_latch = 1;
       }
 
-
-      analogWrite(led_pin2, led2_output*max_bright);
-      //digitalWrite(led_pin1, led2_output);
+      //led2 output goes from 0-255 so multiplying by 0-1.0 will attenuate it
+      analogWrite(led_pin2, led2_output * max_bright); 
 
     } //end of led2 timing if
 
@@ -110,16 +99,17 @@ void loop() {
         led1_output = 0;
       }
 
-      analogWrite(led_pin1, led1_output * 255 * max_bright); //output can be 0-255 so 64 is about 1/4 bright
+      //led1_output is jsut 0 or 1. We multiply by 255 to get it to be 0 or 255
+      // then we multiply by 0-1.0 to attenuate it
+      analogWrite(led_pin1, led1_output * 255 * max_bright);
 
     } //end of led1 timing if
 
-  } //end of button if
-
-  //if the button is not being pressed do this
+  } //end of latch if
 
   else {
     //turn both LEDs off
+    // stick to using either analog or digial wite for each LED. Don't mix the functions
     analogWrite(led_pin1, 0);
     analogWrite(led_pin2, 0);
   }
