@@ -1,5 +1,5 @@
 /*
-  The basics for using the LED tube
+  Using the button to turn the tube off, and eventually change modes
 */
 
 //A special library must be used to communicate with the ws2812 addressable LED tube
@@ -23,16 +23,11 @@ unsigned long prev_time[8]; //an array of 8 variables all named "prev_time"
 int latch[4];
 //floats can hold decimal values
 float lfo[4] = {1, 1, 1, 1}; //set them all to 1
-int noodle;
+
 int button_pin = 5;
-int mode1 = 2;
+int latch1 = 0;
 int button_read;
 int prev_button_read;
-int array_loc;
-
-float hue_array[20] = {.2, .3, .4, .2, .3, .4, .2, .3, .4, .5, .8, .8, .3, .4, .2, .3, .4, .5, .8, .8};
-float bright_array[20];
-float random_brightness;
 
 void setup() {
   pinMode(button_pin, INPUT_PULLUP);
@@ -43,12 +38,6 @@ void setup() {
   LEDs.setPixelColor(1, 0, 0, 0);
   LEDs.show(); //send these values to the LEDs
 
-  randomSeed(analogRead(A8));
-
-  for (int m = 0; m < 20; m++) {
-    hue_array[m] = random(100) / 100.0;
-    bright_array[m] = random(2); //randon doenst include highest number so its 0 or 1
-  }
 
 } //setup is over
 
@@ -60,35 +49,15 @@ void loop() {
   button_read = digitalRead(button_pin);
 
   if (prev_button_read == 1 && button_read == 0) {
-    mode1++;
-    if (mode1 > 3) {
-      mode1 = 0;
+    if (latch1 == 0) {
+      latch1 = 1;
+    }
+    else {
+      latch1 = 0;
     }
   }
 
-  if (current_time - prev_time[5] > 90) {
-    prev_time[5] = current_time;
-    random_brightness = random(100) / 99.0;
-  }
 
-
-  if (current_time - prev_time[4] > 150) {
-    prev_time[4] = current_time;
-    //int r1 = random(10);
-
-    if (mode1 == 2) {
-      noodle--;
-    }
-    if (mode1 == 3) {
-      noodle++;
-    }
-    if (noodle > 19) {
-      noodle = 0;
-    }
-    if (noodle < 0) {
-      noodle = 19;
-    }
-  }
 
   if (current_time - prev_time[3] > 40) {
     prev_time[3] = current_time;
@@ -132,33 +101,22 @@ void loop() {
     int pot1 = analogRead(A0);
     int limit1 = map(pot1, 0, 1023, 0, 20);
 
-    if (mode1 == 2 || mode1 == 3) {
-      for (int m = 0; m < 20; m++) {
-        array_loc = m + noodle;
-        if (array_loc > 19) {
-          array_loc -= 20;
-        }
-        set_LED(m, hue_array[array_loc], 1, bright_array[array_loc]);
-      }
-    }
-
-
-    if (mode1 == 1) {
+    if (latch1 == 1) {
       for (int m = 0; m < 8; m++) {
-        float hue_modulation = m / 50.0;
-        set_LED(m, hue_modulation, 1, 1);
+        float z1 = 0 / 50.0;
+        set_LED(m, z1, 1, bright_pot);
       }
 
       for (int j = 8; j < 16; j++) {
-        set_LED(j, .5, 1, random_brightness / 2.0);
+        set_LED(j, .5, 1, lfo[0]);
       }
 
       for (int d = 16; d < 20; d++) {
-        set_LED(d, .7, 1, random_brightness);
+        set_LED(d, .7, 1, lfo[1]);
       }
     }
 
-    if (mode1 == 0) {
+    if (latch1 == 0) {
       for (int m = 0; m < 20; m++) {
         set_LED(m, 0, 0, 0); //turn everybody off
       }
@@ -167,10 +125,12 @@ void loop() {
     LEDs.show(); //send these values to the LEDs
   }
 
-  if (current_time - prev_time[0] > 100 && 1) { //change to && 0 to not do this code
+  if (current_time - prev_time[0] > 10 && 1) { //change to && 0 to not do this code
     prev_time[0] = current_time;
 
-    Serial.println(analogRead(A8));
+    Serial.print(lfo[0]);
+    Serial.print(" ");
+    Serial.println(lfo[1]);
 
   }
 

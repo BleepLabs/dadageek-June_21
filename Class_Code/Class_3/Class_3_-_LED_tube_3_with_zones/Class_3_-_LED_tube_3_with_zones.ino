@@ -1,5 +1,5 @@
 /*
-  The basics for using the LED tube
+  use multiple for loops to set different zones of the tube to different colors
 */
 
 //A special library must be used to communicate with the ws2812 addressable LED tube
@@ -21,19 +21,10 @@ WS2812Serial LEDs(num_of_leds, displayMemory, drawingMemory, led_data_pin, WS281
 unsigned long current_time;
 unsigned long prev_time[8]; //an array of 8 variables all named "prev_time"
 int latch[4];
-//floats can hold decimal values
 float lfo[4] = {1, 1, 1, 1}; //set them all to 1
-int noodle;
-int button_pin = 5;
-int mode1 = 2;
-int button_read;
-int prev_button_read;
-int array_loc;
 
-float hue_array[20] = {.2, .3, .4, .2, .3, .4, .2, .3, .4, .5, .8, .8, .3, .4, .2, .3, .4, .5, .8, .8};
 
 void setup() {
-  pinMode(button_pin, INPUT_PULLUP);
 
   LEDs.begin(); //must be done in setup for the addressable LEDs to work.
   //here is a basic way of writing to the LEDs.
@@ -48,33 +39,13 @@ void setup() {
 void loop() {
   current_time = millis();
 
-  prev_button_read = button_read;
-  button_read = digitalRead(button_pin);
-
-  if (prev_button_read == 1 && button_read == 0) {
-    mode1++;
-    if (mode1 > 2) {
-      mode1 = 0;
-    }
-  }
-
-
-  if (current_time - prev_time[4] > 500) {
-    prev_time[4] = current_time;
-    noodle++;
-    if (noodle > 19) {
-      noodle = 0;
-    }
-  }
 
   if (current_time - prev_time[3] > 40) {
     prev_time[3] = current_time;
-
-    lfo[1] = lfo[1] + 0.020;
+    lfo[1] = lfo[1] + 0.025;
     if (lfo[1] > 1.0) {
       lfo[1] -= 1.0;
     }
-
   }
 
   if (current_time - prev_time[2] > 1) {
@@ -100,55 +71,30 @@ void loop() {
   if (current_time - prev_time[1] > 33) { //33 milliseconds is about 30 Hz, aka 30 fps
     prev_time[1] = current_time;
 
-    //float hue_pot = analogRead(A0) / 1023.0;
-    //float sat_pot = analogRead(A1) / 1023.0;
+    float hue_pot = analogRead(A0) / 1023.0;
+    float sat_pot = analogRead(A1) / 1023.0;
     float bright_pot = analogRead(A2) / 1023.0;
     //there's another function in this sketch bellow the loop which makes it easier to control the LEDs more info bellow the loop
     //set_LED(led to change, hue,saturation,brightness)
 
-    int pot1 = analogRead(A0);
-    int limit1 = map(pot1, 0, 1023, 0, 20);
-
-    if (mode1 == 2) {
-      for (int m = 0; m < 20; m++) {
-        array_loc = m + noodle;
-        if (array_loc > 19) {
-          array_loc -= 20;
-        }
-        set_LED(m, hue_array[array_loc], 1, 1);
-      }
+    //using multiple fors to create zones where we can set the LEDs to do different things
+    for (int m = 0; m < 8; m++) {
+      set_LED(m, lfo[1], 1, 1);
     }
-
-
-    if (mode1 == 1) {
-      for (int m = 0; m < 8; m++) {
-        float z1 = 0 / 50.0;
-        set_LED(m, z1, 1, bright_pot);
-      }
-
-      for (int j = 8; j < 16; j++) {
-        set_LED(j, .5, 1, lfo[0]);
-      }
-
-      for (int d = 16; d < 20; d++) {
-        set_LED(d, .7, 1, lfo[1]);
-      }
+    for (int j = 8; j < 16; j++) {
+      set_LED(j, .5, 1, lfo[0]);
     }
-
-    if (mode1 == 0) {
-      for (int m = 0; m < 20; m++) {
-        set_LED(m, 0, 0, 0); //turn everybody off
-      }
+    for (int d = 16; d < 20; d++) {
+      set_LED(d, .85, 1, 1);
     }
 
     LEDs.show(); //send these values to the LEDs
   }
 
-  if (current_time - prev_time[0] > 100 && 1) { //change to && 0 to not do this code
+  if (current_time - prev_time[0] > 50 && 1) { //change to && 0 to not do this code
     prev_time[0] = current_time;
 
-
-    Serial.println(array_loc);
+    Serial.println(lfo[1]);
 
   }
 

@@ -1,5 +1,5 @@
 /*
-  The basics for using the LED tube
+  Use 3 pots to control hue, saturation, and brightness
 */
 
 //A special library must be used to communicate with the ws2812 addressable LED tube
@@ -21,7 +21,6 @@ WS2812Serial LEDs(num_of_leds, displayMemory, drawingMemory, led_data_pin, WS281
 unsigned long current_time;
 unsigned long prev_time[8]; //an array of 8 variables all named "prev_time"
 int latch[4];
-float rainbow;//floats can hold decimal values
 float lfo[4] = {1, 1, 1, 1}; //set them all to 1
 
 
@@ -40,15 +39,6 @@ void setup() {
 void loop() {
   current_time = millis();
 
-
-  if (current_time - prev_time[3] > 40) {
-    prev_time[3] = current_time;
-    rainbow = rainbow + 0.025;
-    if (rainbow > 1.0) {
-      rainbow -= 1.0;
-    }
-  }
-  
   if (current_time - prev_time[2] > 1) {
     prev_time[2] = current_time;
     if (latch[0] == 1) {
@@ -72,29 +62,27 @@ void loop() {
   if (current_time - prev_time[1] > 33) { //33 milliseconds is about 30 Hz, aka 30 fps
     prev_time[1] = current_time;
 
-    float hue_pot = analogRead(A0) / 1023.0;
+    lfo[1] = lfo[1] + 0.025;
+    if (lfo[1] > 1.0) {
+      lfo[1] -= 1.0;
+    }
+
+    float hue_pot = analogRead(A0) / 1023.0; //you can declare a variable anywhere but it will only exist inside the {} it's created in
     float sat_pot = analogRead(A1) / 1023.0;
     float bright_pot = analogRead(A2) / 1023.0;
-    //there's another function in this sketch bellow the loop which makes it easier to control the LEDs more info bellow the loop
-    //set_LED(led to change, hue,saturation,brightness)
-    
-    for (int m = 0; m < 8; m++) {
-      set_LED(m, .2, 1, 1);
+
+    for (int m = 0; m < 20; m++) {
+      //there's another function in this sketch bellow the loop which makes it easier to control the LEDs more info bellow the loop
+      //set_LED(led to change, hue,saturation,brightness)
+      set_LED(m, hue_pot, sat_pot, bright_pot);
     }
-    for (int j = 8; j < 16; j++) {
-      set_LED(j, .5, 1, 1);
-    }
-    for (int d = 16; d < 20; d++) {
-      set_LED(d, .85, 1, 1);
-    }
-    
     LEDs.show(); //send these values to the LEDs
   }
 
   if (current_time - prev_time[0] > 50 && 1) { //change to && 0 to not do this code
     prev_time[0] = current_time;
 
-    Serial.println(rainbow);
+    Serial.println(lfo[1]);
 
   }
 

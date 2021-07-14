@@ -1,10 +1,10 @@
 /*
-  The basics for using thr LED tube
+  The basics for using the LED tube
 */
 
 //A special library must be used to communicate with the ws2812 addressable LED tube
 // Download it here https://github.com/PaulStoffregen/WS2812Serial/archive/refs/heads/master.zip
-// Then in Arduino go to "Sketch > Include libraries > Add .ZIP library..." and select the downloaded file. 
+// Then in Arduino go to "Sketch > Include libraries > Add .ZIP library..." and select the downloaded file.
 // The standard LED libraries, like fastLED and adafruits neopixel, cause problems with the audio code we'll do later so this version is used
 
 float max_brightness = .1; //change this to increase the max brightness of the LEDs. 1.0 is very bright
@@ -17,11 +17,10 @@ byte drawingMemory[num_of_leds * 3];
 DMAMEM byte displayMemory[num_of_leds * 12];
 WS2812Serial LEDs(num_of_leds, displayMemory, drawingMemory, led_data_pin, WS2812_GRB);
 
-//then you can declare variables 
+//then you can declare variables
 unsigned long current_time;
 unsigned long prev_time[8]; //an array of 8 variables all named "prev_time"
 int latch[4];
-float rainbow;//floats can hold decimal values
 float lfo[4] = {1, 1, 1, 1}; //set them all to 1
 
 
@@ -40,7 +39,7 @@ void setup() {
 void loop() {
   current_time = millis();
 
-  if (current_time - prev_time[2] > 1) {
+  if (current_time - prev_time[2] > 1) {  //an lfo that goes up and down exponentially
     prev_time[2] = current_time;
     if (latch[0] == 1) {
       lfo[0] *= 1.005;
@@ -63,25 +62,39 @@ void loop() {
   if (current_time - prev_time[1] > 33) { //33 milliseconds is about 30 Hz, aka 30 fps
     prev_time[1] = current_time;
 
-    rainbow += 0.025;
-    if (rainbow > 1.0) {
-      rainbow -= 1.0;
+    lfo[1] += 0.025;
+    if (lfo[1] > 1.0) {
+      lfo[1] -= 1.0; //instead of going back to 0, the max size is subtracted so it loops around rather than reseting
     }
 
-    //there's another function in this sketch bellow the loop which makes it easier to control the LEDs more info bellow the loop
-    //(led to change, hue,saturation,brightness)
+
+    //A "for" loop repeats the code inside its {} as long as the condition is true
+    //for (initialization; condition; increment) {
+    // initialization - new variable to create to use in the condition and increment. it can be set to any value but usually we start with 0
+    // condition - You can think about this like an "if". If this is true the for will keep repeating
+    // increment - after all the code in the {} has executed, this increment happens and then the condition is checked again
+
+    //here we start with m at 0 and executed the code in the {}
+    // then m is incremented by one and the {} code happens again
+    // when m is 19 it runs one last time as one it's incremented to 20 the condition is no longer true so the for {} is exited
     for (byte m = 0; m < 20; m++) {
-      float hue = (m / 20.0) + rainbow;
+
+      float hue = (m / 19.0) + lfo[1]; //m goes from 0-19 so this will create a static rainbow. lfo[1] offsets this so the rainbow moves
+      //lfo[0] goes from 0-11.0 but I dont want the lights to go completely off
+      // lfo[0]*.5 makes it go from 0-.75 so .25 is added to shift it up
       float bright = (lfo[0] * .75) + .25;
+
+      //there's another function in this sketch bellow the loop which makes it easier to control the LEDs more info bellow the loop
+      //(led to change, hue,saturation,brightness)
       set_LED(m, hue, 1, bright);
     }
     LEDs.show(); //send these values to the LEDs
   }
 
-  if (current_time - prev_time[0] > 50 && 0) { //change to && 0 to not do this code
+  if (current_time - prev_time[0] > 50 && 1) { //change to && 0 to not do this code
     prev_time[0] = current_time;
 
-    Serial.println(rainbow);
+    Serial.println(lfo[1]);
 
   }
 
