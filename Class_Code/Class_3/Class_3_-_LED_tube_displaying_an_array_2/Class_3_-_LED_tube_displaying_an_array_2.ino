@@ -145,8 +145,8 @@ void loop() {
 
     if (mode1 == 1) {
       for (int m = 0; m < 8; m++) {
-        float z1 = m / 50.0;
-        set_LED(m, z1, 1, 1);
+        float hue_modulation = m / 50.0;
+        set_LED(m, hue_modulation, 1, 1);
       }
 
       for (int j = 8; j < 16; j++) {
