@@ -78,7 +78,7 @@ void loop() {
     //there's another function in this sketch bellow the loop which makes it easier to control the LEDs more info bellow the loop
     //set_LED(led to change, hue,saturation,brightness)
     
-    for (int m = 0; m < 20; m++) {
+    for (int m = 0; m < 8; m++) {
       set_LED(m, .2, 1, 1);
     }
     for (int j = 8; j < 16; j++) {
