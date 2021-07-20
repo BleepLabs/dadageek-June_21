@@ -23,7 +23,7 @@ unsigned long prev_time[8]; //an array of 8 variables all named "prev_time"
 int latch[4];
 float lfo[4] = {1, 1, 1, 1}; //set them all to 1
 float pot[4];
-
+int mid_point;
 void setup() {
 
   LEDs.begin(); //must be done in setup for the addressable LEDs to work.
@@ -31,7 +31,7 @@ void setup() {
   LEDs.setPixelColor(0, 0, 0, 0); //(LED number, red level, green level, blue level). All levels are 0-255
   LEDs.setPixelColor(1, 0, 0, 0);
   LEDs.show(); //send these values to the LEDs
-  
+
   analogReadResolution(12); //analogRead now returns 0-4095
   analogReadAveraging(64); //each analogread will be averaged begore returnign a value. This is the first step to smooth readings
 
@@ -46,19 +46,21 @@ void loop() {
 
     pot[0] = analogRead(A0) / 4095.0; //4095 is now the highest reading
     pot[1] = analogRead(A1) / 4095.0;
-    pot[2] = analogRead(A2) / 4095.0;
+    pot[2] = analogRead(A2); //0-4095
+
+    mid_point = map(pot[2], 0, 4095, 1, 18);
 
     //this is another fuction I made below the loop
     //set_gradient(start_LED,end_LED, start_h,start_s,start_v, end_h,end_s,end_v)
-    set_gradient(0, 10, pot[0], 1, 1, pot[1], 1, 1);
-    set_gradient(11, 20, pot[1], 1, 1, pot[2], 1, 1);
+    set_gradient(0, mid_point, pot[0], 1, 1, pot[1], 1, 1);
+    set_gradient(mid_point + 1, 19, pot[1], 1, 1, .9, 1, 1);
     LEDs.show(); //send these values to the LEDs
   }
 
   if (current_time - prev_time[0] > 50 && 1) { //change to && 0 to not do this code
     prev_time[0] = current_time;
 
-    Serial.println(pot[0], 6); //the ,5 means it will show 6 decimal places
+    Serial.println(pot[0], 6); //the ,6 means it will show 6 decimal places
 
   }
 

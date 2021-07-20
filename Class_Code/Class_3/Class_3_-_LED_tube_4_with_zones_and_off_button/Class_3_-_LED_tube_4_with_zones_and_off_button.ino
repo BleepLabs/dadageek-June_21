@@ -103,7 +103,7 @@ void loop() {
 
     if (latch1 == 1) {
       for (int m = 0; m < 8; m++) {
-        float z1 = 0 / 50.0;
+        float z1 = m / 50.0;
         set_LED(m, z1, 1, bright_pot);
       }
 
