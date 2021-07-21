@@ -51,7 +51,7 @@ void loop() {
     pot[1] = analogRead(A1) / 4095.0;
     pot[2] = analogRead(A2); //0-4095
 
-    mid_point = map(pot[2], 0, 4095, 0, 10000);
+    mid_point = map(pot[2], 0, 4095, 0, 19);
 
     touch1 = touchRead(0);
 
@@ -66,8 +66,8 @@ void loop() {
 
     //this is another fuction I made below the loop
     //set_gradient(start_LED,end_LED, start_h,start_s,start_v, end_h,end_s,end_v)
-    set_gradient(0, mid_point, pot[0], 1, touch_brightness, pot[1], 1, touch_brightness);
-    set_gradient(mid_point + 1, 19, pot[1], 1, touch_brightness, .9, 1, touch_brightness);
+    set_gradient(0, 11, pot[0], 1, touch_brightness, pot[1], 1, touch_brightness);
+    set_gradient(12 + 1, 19, pot[1], 1, touch_brightness, .9, 1, touch_brightness);
     LEDs.show(); //send these values to the LEDs
   }
 
