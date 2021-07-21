@@ -1,5 +1,6 @@
 /*
-  setting gradient zones
+  using the photocell to turn a single LEDs on
+  Touch sensor will tun on all LEDs below it and fade out
 */
 
 //A special library must be used to communicate with the ws2812 addressable LED tube
@@ -28,11 +29,9 @@ int pcell;
 int smoothed_pcell;
 int smoothed_touch;
 int pcell_pos;
-float mugwart = 1;
-float twonky;
-int trails[4];
-int trail_counter;
-int prev_trail_counter;
+float follower1 = 1;
+float follower1_brightness;
+
 void setup() {
 
   LEDs.begin(); //must be done in setup for the addressable LEDs to work.
@@ -56,24 +55,39 @@ void loop() {
     pot[0] = analogRead(A0) / 4095.0; //4095 is now the highest reading
     pot[1] = analogRead(A1) / 4095.0;
     pot[2] = analogRead(A2) / 4095.0;
+    
+    //is read jsut liek a potentiometer but won't get all the way to 0 or 4095
+    pcell = analogRead(A3);
 
+    //smooth(select,input). Another function below the loop
+    // each value you smooth needs a seperate select number
+    smoothed_pcell = smooth(0, pcell);
 
-
+    pcell_pos = map(smoothed_pcell, 400, 2000, 0, 19);
 
     touch = touchRead(0); // the range of this one is dependent on lots of things so you'll need to print it to see
     smoothed_touch = smooth(1, touch);
 
-    if (mugwart < smoothed_touch) {
-      mugwart = mugwart * 1.1;
+    //follower1 (wich we called "mugwart" in class bc why not) follows smoothed_touch
+    // This allows for a differnt type of interaction. It's still controlled by touch
+    // but has an attack and release envelope, taking time to fade in and out
+    // if it's less than smoothed_touch increase it
+    if (follower1 < smoothed_touch) {
+      follower1 = follower1 * 1.05;
     }
-    if (mugwart >= smoothed_touch) {
-      mugwart = mugwart * .995;
+    // if it's greater than smoothed_touch decrease it
+    if (follower1 >= smoothed_touch) {
+      follower1 = follower1 * .995;
     }
-    if (mugwart < 1) {
-      mugwart = 1;
+    //make sure it can't get to 0 as then we can't multiply
+    if (follower1 < 1) {
+      follower1 = 1;
     }
-    twonky = map(mugwart, 1500, 7000, 0, 100);
-    twonky = twonky / 100.0;
+
+    //then we can map it to 0-1.0 as before. 
+    // 1500 and 7000 were the values I found for my setup, yor will be differnt 
+    follower1_brightness = map(follower1, 1500, 7000, 0, 100);
+    follower1_brightness = follower1_brightness / 100.0;
 
   }
 
@@ -82,40 +96,15 @@ void loop() {
     prev_time[1] = current_time;
 
     for (int m = 0; m < 20; m++) {
-      set_LED(m, 0, 0, 0);
+      set_LED(m, 0, 0, 0); //turn all the LEDs off first
     }
-    trail_counter++;
-    if (trail_counter > 3) {
-      trail_counter = 0;
-    }
-    trails[trail_counter] = pcell_pos;
-    pcell = analogRead(A3);
-    pcell_pos = map(pcell, 400, 2000, 0, 19);
 
-    set_LED(pcell_pos, 0, 0, 1);
+    set_LED(pcell_pos, .6, 1, 1); //set the one light on at the photocell postition
 
-    prev_trail_counter = trail_counter - 1;
-    if (prev_trail_counter < 0) {
-      prev_trail_counter += 4;
-    }
-    set_LED(trails[prev_trail_counter], .6, 1, .5);
-
-    prev_trail_counter = prev_trail_counter - 1;
-    if (prev_trail_counter < 0) {
-      prev_trail_counter += 4;
-    }
-    set_LED(trails[prev_trail_counter], .65, 1, .4);
-
-    prev_trail_counter = prev_trail_counter - 1;
-    if (prev_trail_counter < 0) {
-      prev_trail_counter += 4;
-    }
-    set_LED(trails[prev_trail_counter], .7, 1, .3);
-
+    //all the ones bellow photocell postition will be 0 brightness untill the touch sensor is actuivated
     for (int m = 0; m < pcell_pos; m++) {
-      //set_LED(m, .5, 1, twonky);
+      set_LED(m, .5, 1, follower1_brightness); 
     }
-
 
     LEDs.show(); //send these values to the LEDs
   }
@@ -123,14 +112,11 @@ void loop() {
   if (current_time - prev_time[0] > 50 && 1) { //change to && 0 to not do this code
     prev_time[0] = current_time;
 
-    //to have multiple lines in the serial plotter have a " " bettwen the values
-    // and println "ln" at the end
-
-    // Serial.print(touch); //print without a return after
-    //  Serial.print(" "); //print a space
+    //to have multiple lines in the serial plotter have a " " bettwen the "print" 
+    // values and "println" at the end
     Serial.print(smoothed_touch);
     Serial.print(" ");
-    Serial.println(mugwart); //print with a return after
+    Serial.println(follower1); //print with a return after
 
   }
 

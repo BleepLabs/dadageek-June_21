@@ -1,5 +1,6 @@
 /*
   setting gradient zones
+  Touch sensor controls brightness
 */
 
 //A special library must be used to communicate with the ws2812 addressable LED tube
@@ -23,18 +24,10 @@ unsigned long prev_time[8]; //an array of 8 variables all named "prev_time"
 int latch[4];
 float lfo[4] = {1, 1, 1, 1}; //set them all to 1
 float pot[4];
-int touch;
-int pcell;
-int smoothed_pcell;
-int smoothed_touch;
-int pcell_pos;
-int pcell_follower;
-float mugwart = 1.0;
-float twonky;
-int trails[20];
-int trail_counter;
-int prev_trail_counter;
-int trail_len = 19;
+int low_threshold;
+int sensitivity;
+int touch1;
+float touch_brightness = 1.0;
 
 void setup() {
 
@@ -53,88 +46,51 @@ void setup() {
 void loop() {
   current_time = millis();
 
-  if (current_time - prev_time[2] > 5) {
-    prev_time[2] = current_time;
-
-    pot[0] = analogRead(A0) / 4095.0; //4095 is now the highest reading
-    pot[1] = analogRead(A1) / 4095.0;
-    pot[2] = analogRead(A2) / 4095.0;
-
-
-    touch = touchRead(0); // the range of this one is dependent on lots of things so you'll need to print it to see
-    smoothed_touch = smooth(1, touch);
-
-    if (mugwart < smoothed_touch) {
-      mugwart = mugwart * 1.1;
-    }
-    if (mugwart >= smoothed_touch) {
-      mugwart = mugwart * .995;
-    }
-    if (mugwart < 1) {
-      mugwart = 1;
-    }
-    twonky = map(mugwart, 1500, 7000, 0, 100);
-    twonky = twonky / 100.0;
-
-  }
-
-
   if (current_time - prev_time[1] > 33) { //33 milliseconds is about 30 Hz, aka 30 fps
     prev_time[1] = current_time;
 
-    for (int m = 0; m < 20; m++) {
-      set_LED(m, 0, 0, 0);
-    }
-    trail_counter++;
-    if (trail_counter > trail_len) {
-      trail_counter = 0;
-    }
-    trails[trail_counter] = pcell_follower;
-    pcell = analogRead(A3);
-
-    pcell_pos = map(pcell, 400, 2000, 0, 19);
+    pot[0] = analogRead(A0) / 4095.0; //ourputs 0-1.0  4095 is now the highest reading
     
-    if (pcell_follower<pcell_pos){
-      pcell_follower++;
-    }
-    if (pcell_follower>pcell_pos){
-      pcell_follower--;
-    }
-    
-    set_LED(pcell_follower, 0, 0, 1);
+    pot[1] = analogRead(A1); //0-4095
+    pot[2] = analogRead(A2); //0-4095
 
-    for (int j = 0; j < trail_len; j++) {
-      prev_trail_counter = trail_counter - 1 - j;
-      if (prev_trail_counter < 0) {
-        prev_trail_counter += trail_len;
-      }
-      float c1 = .6 + (j / float(trail_len));
-      float b1 = .8 - (j / float(trail_len));
-      set_LED(trails[prev_trail_counter], c1, 1, b1);
+    low_threshold = map(pot[2], 0, 4095, 0, 10000); //we were calling this "midpoint" in class
+    sensitivity = map(pot[1], 0, 4095, 0, 2000);
+
+    touch1 = touchRead(0);
+    //touch read will return very different numbers depending on your setup
+    // the best way to deal with this is use the potentiometers to set the range in which you want it to work
+    // One pot sets "low_threshold", the value at which "touch_brightness" will start to be affected by "touch1"
+
+    if (touch1 <= low_threshold) { //when under the threshold, set the brightness to 0
+      touch_brightness = 0;
     }
 
-
-
-    for (int m = 0; m < pcell_pos; m++) {
-      //set_LED(m, .5, 1, twonky);
+    if (touch1 > low_threshold) { 
+      //when over the threshold, map the touch starting at "low_threshold" and going to 
+      //"low_threshold + sensitivity" to 0-1000
+      // when touch1 is greater than "low_threshold + sensitivity", map will just output 1000
+      touch_brightness = map(touch1, low_threshold, low_threshold + sensitivity, 0, 1000);
+      
+      //then we divide by 1000 to make "touch_brightness", which is a float, go from 0-1.0
+      touch_brightness = touch_brightness / 1000.0;
     }
 
 
+    //this is another function I made below the loop
+    //set_gradient(start_LED,end_LED, start_h,start_s,start_v, end_h,end_s,end_v)
+    set_gradient(0, 20, pot[0], 1, touch_brightness, pot[0] + .5, 1, touch_brightness);
     LEDs.show(); //send these values to the LEDs
   }
 
   if (current_time - prev_time[0] > 50 && 1) { //change to && 0 to not do this code
     prev_time[0] = current_time;
-
-    //to have multiple lines in the serial plotter have a " " bettwen the values
-    // and println "ln" at the end
-
-    // Serial.print(touch); //print without a return after
-    //  Serial.print(" "); //print a space
-    Serial.print(pcell_pos);
-    Serial.print(" ");
-    Serial.println(pcell_follower); //print with a return after
-
+    //when printing for the serial plotter in the tools menu, use this format
+    Serial.print(low_threshold + sensitivity); //value to print 
+    Serial.print(" "); //space
+    Serial.print(low_threshold); //value to print 
+    Serial.print(" "); //space
+    Serial.println(touch1); //the last value to print is "println" meaning a return is printed after it. 
   }
 
 }// loop is over
@@ -373,7 +329,7 @@ void calc_RGB(float fh, float fs, float fv) {
 ////////////smooth function
 //based on https://playground.arduino.cc/Main/DigitalSmooth/
 
-#define filterSamples   21   // filterSamples should  be an odd number, no smaller than 3. Increase for more smoooothness
+#define filterSamples   17   // filterSamples should  be an odd number, no smaller than 3. Increase for more smoooothness
 #define array_num 8 //number of different smooths we can take, one for each pot
 int sensSmoothArray[array_num] [filterSamples];   // array for holding raw sensor values for sensor1
 

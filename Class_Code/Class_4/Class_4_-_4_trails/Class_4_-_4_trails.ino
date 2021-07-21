@@ -1,5 +1,5 @@
 /*
-  setting gradient zones
+  Adding trails to the LED controlled by the photocell
 */
 
 //A special library must be used to communicate with the ws2812 addressable LED tube
@@ -23,9 +23,20 @@ unsigned long prev_time[8]; //an array of 8 variables all named "prev_time"
 int latch[4];
 float lfo[4] = {1, 1, 1, 1}; //set them all to 1
 float pot[4];
-int mid_point;
-int touch1;
-float touch_brightness = 1.0;
+int touch;
+int pcell;
+int smoothed_pcell;
+int smoothed_touch;
+int pcell_pos;
+int pcell_follower;
+float follower1 = 1.0;
+float follower1_brightness;
+
+int trail_counter;
+int prev_trail_counter;
+
+int trail_len = 19; //set how many trail LEDs we want. The array can hold up to 30
+int trails[30];
 
 void setup() {
 
@@ -36,7 +47,7 @@ void setup() {
   LEDs.show(); //send these values to the LEDs
 
   analogReadResolution(12); //analogRead now returns 0-4095
-  analogReadAveraging(64); //each analogread will be averaged begore returnign a value. This is the first step to smooth readings
+  analogReadAveraging(64); //each analogread will be averaged before returning a value. This is the first step to smooth readings
 
 } //setup is over
 
@@ -44,37 +55,108 @@ void setup() {
 void loop() {
   current_time = millis();
 
-  if (current_time - prev_time[1] > 33) { //33 milliseconds is about 30 Hz, aka 30 fps
-    prev_time[1] = current_time;
+  if (current_time - prev_time[2] > 5) {
+    prev_time[2] = current_time;
 
     pot[0] = analogRead(A0) / 4095.0; //4095 is now the highest reading
     pot[1] = analogRead(A1) / 4095.0;
-    pot[2] = analogRead(A2); //0-4095
+    pot[2] = analogRead(A2) / 4095.0;
 
-    mid_point = map(pot[2], 0, 4095, 0, 19);
 
-    touch1 = touchRead(0);
+    touch = touchRead(0); // the range of this one is dependent on lots of things so you'll need to print it to see
+    smoothed_touch = smooth(1, touch);
 
-    if (touch1 > mid_point) {
-      touch_brightness = map(touch1, 5000, 8000, 0, 100);
-      touch_brightness = touch_brightness / 100.0;
+    if (follower1 < smoothed_touch) {
+      follower1 = follower1 * 1.1;
     }
-    if (touch1 <= mid_point) {
-      touch_brightness = 0;
+    if (follower1 >= smoothed_touch) {
+      follower1 = follower1 * .995;
+    }
+    if (follower1 < 1) {
+      follower1 = 1;
+    }
+    follower1_brightness = map(follower1, 1500, 7000, 0, 100);
+    follower1_brightness = follower1_brightness / 100.0;
+
+  }
+
+
+  if (current_time - prev_time[1] > 33) { //33 milliseconds is about 30 Hz, aka 30 fps
+    prev_time[1] = current_time;
+
+    for (int m = 0; m < 20; m++) {
+      set_LED(m, 0, 0, 0); //turn all lights off
+    }
+
+    //to add trails we need to remember where the "pcell_follower" was over time
+    // to do this we'll store the readings in an array
+    // each time this timing if happens we increment "trail_counter"
+    // and store the last reading in that position
+    trail_counter++;
+    if (trail_counter > trail_len) {
+      //when the end of the array is reached we go back to the beginning an overwrite those values
+      trail_counter = 0;
+    }
+    //Then we store the last value in the array
+    trails[trail_counter] = pcell_follower;
+
+    //And get a new reading from the pcell
+    pcell = analogRead(A3);
+    //and map it to the range we want
+    pcell_pos = map(pcell, 400, 2000, 0, 19);
+
+    //this follower only allows the LED to move one space at a time
+    if (pcell_follower < pcell_pos) {
+      pcell_follower++;
+    }
+    if (pcell_follower > pcell_pos) {
+      pcell_follower--;
     }
 
 
-    //this is another fuction I made below the loop
-    //set_gradient(start_LED,end_LED, start_h,start_s,start_v, end_h,end_s,end_v)
-    set_gradient(0, 11, pot[0], 1, touch_brightness, pot[1], 1, touch_brightness);
-    set_gradient(12 + 1, 19, pot[1], 1, touch_brightness, .9, 1, touch_brightness);
+
+    //Then we set the previous positions
+    // Starting at 0 and going up to how many trailing LEDs we want
+    for (int j = 0; j < trail_len; j++) {
+      //all the previous positions are stored in the array
+      //so we subtract to get to them
+      prev_trail_counter = trail_counter - 1 - j;
+      //but we don't want to go under 0 so we wrap it around
+      //we add the length back to the counter to get to the position we want
+      if (prev_trail_counter < 0) {
+        prev_trail_counter += trail_len;
+      }
+
+      //we can use "j" to change the color and brightness of each trail led
+
+      //.6 and 60 are arbitrary. Try other values to change the rainbow
+      float color1 = .6 + (j / 60.0);
+      //by diving j by the length we can make the last LED be pretty much all the way faded out
+      // trail len is not a float so we make it one so the division works
+      float bright1 = 1.0 - (j / float(trail_len));
+      set_LED(trails[prev_trail_counter], color1, 1, bright1);
+
+    }
+
+    //Then we set the current position so it will be on top of the trails
+    // Otherwise the trails will over write it
+    set_LED(pcell_follower, 0, 0, 1);
+
+
     LEDs.show(); //send these values to the LEDs
   }
 
-  if (current_time - prev_time[0] > 50 && 1) { //change to && 0 to not do this code
+  if (current_time - prev_time[0] > 50 && 0) { //change to && 0 to not do this code
     prev_time[0] = current_time;
 
-    Serial.println(touch1); //the ,6 means it will show 6 decimal places
+    //to have multiple lines in the serial plotter have a " " between the values
+    // and println "ln" at the end
+
+    // Serial.print(touch); //print without a return after
+    //  Serial.print(" "); //print a space
+    Serial.print(pcell_pos);
+    Serial.print(" ");
+    Serial.println(pcell_follower); //print with a return after
 
   }
 
@@ -314,7 +396,7 @@ void calc_RGB(float fh, float fs, float fv) {
 ////////////smooth function
 //based on https://playground.arduino.cc/Main/DigitalSmooth/
 
-#define filterSamples   17   // filterSamples should  be an odd number, no smaller than 3. Increase for more smoooothness
+#define filterSamples   21   // filterSamples should  be an odd number, no smaller than 3. Increase for more smoooothness
 #define array_num 8 //number of different smooths we can take, one for each pot
 int sensSmoothArray[array_num] [filterSamples];   // array for holding raw sensor values for sensor1
 
