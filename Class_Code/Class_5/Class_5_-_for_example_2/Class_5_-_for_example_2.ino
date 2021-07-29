@@ -1,6 +1,8 @@
 unsigned long current_time;
 unsigned long prev_time[8];
 float k;
+int rate1;
+int bananana;
 void setup() {
   // put your setup code here, to run once:
   randomSeed(analogRead(A9));
@@ -9,20 +11,24 @@ void setup() {
 void loop() {
   current_time = millis();
 
-  if (current_time - prev_time[1] > 1000) {
-    prev_time[1] = current_time;
+  rate1 = analogRead(A0);
 
-    for (int j = 0; j < 10; j++) {
-      k = random(100) / 99.0;
-      //k = k + 1000;
-      Serial.print(j);
-      Serial.print("-");
-      Serial.print(k, 6);
-      Serial.print("  ");
-    }
-    Serial.println();
+  if (current_time - prev_time[1] > rate1) {
+    prev_time[1] = current_time;
+    bananana = !bananana; //ONLY FOR 0 AND 1
   }
 
-  
+
+  if (current_time - prev_time[0] > 5  && 1) {
+    prev_time[0] = current_time;
+    Serial.println(bananana);
+
+    //    Serial.print(prev_time[1]);
+    //    Serial.print(" ");
+    //    Serial.print(current_time);
+    //    Serial.print(" ");
+    //    Serial.print(current_time - prev_time[1]);
+    //    Serial.println();
+  }
 
 }
