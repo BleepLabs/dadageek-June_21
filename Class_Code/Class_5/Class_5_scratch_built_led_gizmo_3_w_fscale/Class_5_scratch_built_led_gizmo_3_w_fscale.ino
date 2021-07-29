@@ -1,3 +1,20 @@
+/*
+
+Making a new LED thing from scratch
+First step
+mode 0 
+  - all lights flash at different random colors
+  - LFO controls brightness
+  - LFO shape set by fscale
+Mode 1
+  - A single LED chases across the tube
+
+pot on A0 selects mode
+Pot A1 controls LFO rate
+Pot A2 controls LFO shape
+
+
+*/
 
 float max_brightness = .1; //change this to increase the max brightness of the LEDs. 1.0 is very bright
 
@@ -63,7 +80,10 @@ void loop() {
       lfo_mode = 0;
     }
 
-    lfo_shaped = fscale(lfo, 0, 100, 0, 100, shape1);
+    // fscale is like map but it allows you to shape the response from logarithmic to exponential. Chonky to snappy
+    // Shape is -10 for exponential, 0 for linear, 10 for Log
+    // fscale(input, from low,from high,to low,to high,shape) function is at bottom of the code
+    lfo_shaped = fscale(lfo, 0, 99, 0, 99, shape1); 
 
     if (mode == 0) {
       for (int led_select = 0; led_select < 20; led_select++) {
@@ -96,6 +116,10 @@ void loop() {
   if (current_time - prev_time[0] > 50) {
     prev_time[0] = current_time;
 
+    //to print out multiple lines in the serial monitor
+    //have a variable
+    //then a space
+    //and end w println
     Serial.print(lfo);
     Serial.print(" ");
     Serial.println(lfo_shaped);
@@ -197,8 +221,14 @@ void set_LED(int pixel, float fh, float fs, float fv) {
   LEDs.setPixelColor(pixel, RedLight, GreenLight, BlueLight);
 }
 
-//cureve is 10 to -10 with 0 being linear
-float fscale( float inputValue, float originalMin, float originalMax,
+  
+  //https://playground.arduino.cc/Main/Fscale/ I reordered the input values from this example
+
+  // fscale is like map but it allows you to shape the response from logarithmic to exponential. Chonky to snappy
+  // Shape is -10.0 for exponential, 0 for linear, 10.0 for Log
+  // fscale(input, from low,from high,to low,to high,shape) function is at bottom of the code
+   
+ float fscale( float inputValue, float originalMin, float originalMax,
               float newBegin, float newEnd, float curve) {
 
   float OriginalRange = 0;

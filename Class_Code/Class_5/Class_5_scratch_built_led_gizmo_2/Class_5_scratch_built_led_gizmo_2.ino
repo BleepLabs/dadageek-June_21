@@ -1,3 +1,18 @@
+/*
+
+Making a new LED thing from scratch
+First step
+mode 0 
+  - all lights flash at different random colors
+  - LFO controls brightness
+Mode 1
+  - A single LED chases across the tube
+
+pot on A0 selects mode
+Pot A1 controls LFOr ate
+
+*/
+
 
 float max_brightness = .1; //change this to increase the max brightness of the LEDs. 1.0 is very bright
 
@@ -35,24 +50,24 @@ void loop() {
   lfo_rise_rate = raw_pot_1 / 1023.0; //0-1.0
   lfo_rise_rate *= 10.0; // 0 - 10.0
   lfo_rise_rate += 1; //1.0-11.0
-  lfo_fall_rate = lfo_rise_rate / 3.0;
+  lfo_fall_rate = lfo_rise_rate / 3.0; 
 
 
-  if (current_time - prev_time[1] > 33) {//33milliseonds is 30Hz
+  if (current_time - prev_time[1] > 33) {//33 milliseconds is 30Hz, aka 30 fps, a standard screen frame rate
     prev_time[1] = current_time;
 
     if (lfo_mode == 1) {
-      lfo += lfo_rise_rate;
+      lfo += lfo_rise_rate; 
     }
     if (lfo_mode == 0) {
       lfo -= lfo_fall_rate;
     }
-    if (lfo < 20) {
+    if (lfo < 20) { //20 is the lowest value
       lfo = 20;
       lfo_mode = 1;
 
     }
-    if (lfo > 99) {
+    if (lfo > 99) { //99 is the highest
       lfo = 99;
       lfo_mode = 0;
     }
@@ -60,27 +75,29 @@ void loop() {
     if (mode == 0) {
       for (int led_select = 0; led_select < 20; led_select++) {
         random_color = random(100) / 99.0;
-        //(led to change, hue,saturation,brightness)
-        set_LED(led_select, random_color, 1, lfo / 99.0);
+        //(led to change, hue 0-1.0,saturation 0-1.0,brightness 0-1.0)
+        // FLO is 20-99 so divide by 99 to get 0.2-1.0
+        set_LED(led_select, random_color, 1, lfo / 99.0); 
       }
 
     }
 
     if (mode == 1) {
       for (int led_select = 0; led_select < 20; led_select++) {
-        set_LED(led_select, .5, 0, 1);
+        set_LED(led_select, .5, 0, 1); //turn all lights to white. Saturation is 0 so hue doesn't matter
       }
-      set_LED(chase1, .5, 0, 0);
+      set_LED(chase1, .5, 0, 0); //turn the one light at the location "chase1" off
 
     }
 
-    LEDs.show();
+    LEDs.show(); //send out whatever mode set the LEDs
   }
 
-  if (current_time - prev_time[2] > 1000 / 4) {
+  if (current_time - prev_time[2] > 1000 / 4) { //1000 is 1 second so this "if" happens 4 times a second
     prev_time[2] = current_time;
-    chase1++;
-    if (chase1 > 19) {
+  
+    chase1++; //location of the light to turn off
+    if (chase1 > 19) { //the tube has 20 lights, 0-19
       chase1 = 0;
     }
   }

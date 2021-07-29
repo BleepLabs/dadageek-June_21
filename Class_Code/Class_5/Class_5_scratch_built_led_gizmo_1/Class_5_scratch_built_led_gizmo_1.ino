@@ -1,3 +1,13 @@
+/*
+
+Making a new LED thing from scratch
+First step
+mode 0 - all lights flash at different random colors
+
+pot on A0 selects mode
+
+*/
+
 
 float max_brightness = .1; //change this to increase the max brightness of the LEDs. 1.0 is very bright
 
@@ -22,18 +32,25 @@ void setup() {
 void loop() {
   current_time = millis();
 
-  //mode = (analogRead(A0) / 1023.0) * 2; //0-2 but 2 is only selected at very end of pot
-  mode = map(analogRead(A0), 0, 1023, 0, 2);
+  //mode = (analogRead(A0) / 1023.0) * 2; //0-2 but 2 is only selected at very end of pot, when the analog read=1023
+  mode = map(analogRead(A0), 0, 1023, 0, 2); //give 0 1 and 2 in equal thirds of the pot
 
-  if (current_time - prev_time[1] > 33) {
+  if (current_time - prev_time[1] > 33) { //33 is 30Hz, about the normal refresh rate of screens
     prev_time[1] = current_time;
 
-    if (mode == 0) {
+    if (mode == 0) {  
 
-      for (byte led_select = 0; led_select < 20; led_select++) {
+      //When this line is here the random color is calculated each time the timing if happens
+      // This means all the LEDs will be the same color
+      //random is an integer. random(100) gives 0-99 so we divide it by 99.0 to get it to 0-1.0
+      //random_color = random(100) / 99.0; 
+
+      for (byte led_select = 0; led_select < 20; led_select++) { 
+        //When the line is here, a new random color is calculated each for loop, so once her led
+        // making them all different 
         random_color = random(100) / 99.0;
 
-        //(led to change, hue,saturation,brightness)
+        //(led to change, hue 0-1.0,saturation 0-1.0,brightness 0-1.0)
         set_LED(led_select, random_color, 1, 1);
       }
       LEDs.show();
@@ -42,8 +59,7 @@ void loop() {
 
 
 
-
-  if (current_time - prev_time[0] > 1000) {
+  if (current_time - prev_time[0] > 100) {
     prev_time[0] = current_time;
 
     Serial.println(mode);
