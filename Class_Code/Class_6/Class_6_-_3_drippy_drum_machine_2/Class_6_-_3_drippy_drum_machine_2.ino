@@ -1,7 +1,9 @@
 /*
-  Basic audio code
-  Smooth and fscale are below the loop also
+  Using an array to play different drum patterns
+  and to vary the sounds
+    
 */
+
 #include <Audio.h>
 #include <Wire.h>
 #include <SPI.h>
@@ -30,7 +32,7 @@ AudioConnection          patchCord5(mixer1, dac1);
 #include <Bounce2.h>
 
 //set the number of buttons and the pins they are connected to
-#define NUM_BUTTONS 4 //a define is jsut a replacement. It can't be changed. You can use it to set the size of an array. A normal variable can't do that
+#define NUM_BUTTONS 4 //a define is just a replacement. It can't be changed. You can use it to set the size of an array. A normal variable can't do that
 const int BUTTON_PINS[NUM_BUTTONS] = {2, 5, 9, 12};
 Bounce * buttons = new Bounce[NUM_BUTTONS];
 #define BOUNCE_LOCK_OUT //THis is the better way to use bounce with audio https://github.com/thomasfredericks/Bounce2#lock-out-interva
@@ -62,10 +64,12 @@ float amp1, amp2;
 float drum1_fade, drum2_fade;
 float drum_len;
 float drum_pitch_env;
+int seq_data;
 
+//I replaced the "1"s with random numbers we'll use to change the sounds 
 int drum_bank1[2][16] = {
-  {1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0},
-  {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+  {20, 0, 0, 0, 30, 48, 0, 0, 46, 0, 0, 0, 10, 0, 100, 0},
+  {0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0},
 };
 
 int drum_bank2[2][16] = {
@@ -173,8 +177,11 @@ void loop() {
     }
 
     if (drum_bank1_mode == 1) {
-      if (drum_bank1[0][drum_index] == 1) {
+      //now we trigger the drum if it's over 0
+      // and use that data further down the loop to change the drum's pitch or length or whatever
+      if (drum_bank1[0][drum_index] > 0) {
         drum1.noteOn();
+        seq_data = drum_bank1[0][drum_index];
         drum1_fade = .5;
       }
     }
@@ -204,12 +211,14 @@ void loop() {
 
   if (current_time - prev_time[2] > 5) { //slowing  down analog reads a little makes them less noisy
     prev_time[2] = current_time;
-    freq1 = analogRead(A0) / 4.0; //0-1000ish
+    
+    //Now frequency is the combination of the pot and the data from the sequence
+    freq1 = (analogRead(A0) / 4.0) + (seq_data * 4); // *4 was just to give it a bigger effect
 
     note_select2 = map(analogRead(A1), 0, 4095, 40, 80);
     freq2 = chromatic[note_select2];
 
-    drum_len = analogRead(A1) / 4.0;
+    drum_len = (analogRead(A1) / 4.0);
     drum_pitch_env = analogRead(A2) / 4095.0;
     waveform1.frequency(freq1);
     waveform2.frequency(freq2);

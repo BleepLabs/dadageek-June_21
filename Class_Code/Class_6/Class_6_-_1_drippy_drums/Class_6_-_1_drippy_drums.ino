@@ -1,7 +1,8 @@
 /*
-  Basic audio code
-  Smooth and fscale are below the loop also
+  Playing two drum sound with buttons
+  Three pots are used to change their sound
 */
+
 #include <Audio.h>
 #include <Wire.h>
 #include <SPI.h>
@@ -29,7 +30,7 @@ AudioConnection          patchCord5(mixer1, dac1);
 #include <Bounce2.h>
 
 //set the number of buttons and the pins they are connected to
-#define NUM_BUTTONS 2 //a define is jsut a replacement. It can't be changed. You can use it to set the size of an array. A normal variable can't do that
+#define NUM_BUTTONS 2 //a define is just a replacement. It can't be changed. You can use it to set the size of an array. A normal variable can't do that
 const int BUTTON_PINS[NUM_BUTTONS] = {2, 5};
 Bounce * buttons = new Bounce[NUM_BUTTONS];
 #define BOUNCE_LOCK_OUT //THis is the better way to use bounce with audio https://github.com/thomasfredericks/Bounce2#lock-out-interva
@@ -137,28 +138,30 @@ void loop() {
 
   if ( buttons[0].fell() ) {
     drum1.noteOn();
-    drum1_fade = 1.0;
+    drum1_fade = 1.0; //set the brightness to 1
   }
 
   if ( buttons[1].fell() ) {
     drum2.noteOn();
-    drum2_fade = 1.0;
+    drum2_fade = 1.0; //set the brightness to 1
   }
 
   if (buttons[0].read() == 0) {
     //do something while the button on the left is held down
+    //drum1.noteOn(); // you don't want this here as it will keep restarting the sound every loop
   }
 
 
   if (current_time - prev_time[2] > 5) { //slowing  down analog reads a little makes them less noisy
     prev_time[2] = current_time;
-    freq1 = analogRead(A0) / 4.0; //0-1000ish
 
+    freq1 = analogRead(A0) / 4.0; //0-1000ish
+    drum_len = analogRead(A1) / 4.0; //0-1000
+    drum_pitch_env = analogRead(A2) / 4095.0; //0-1.0
+
+    //the waveforms are still playing but their mixer inputs are turned all the way down.
     note_select2 = map(analogRead(A1), 0, 4095, 40, 80);
     freq2 = chromatic[note_select2];
-
-    drum_len = analogRead(A1) / 4.0;
-    drum_pitch_env = analogRead(A2) / 4095.0;
     waveform1.frequency(freq1);
     waveform2.frequency(freq2);
 
@@ -167,18 +170,18 @@ void loop() {
     drum1.length(drum_len);//how long to fade out in milliseconds
     drum1.pitchMod(drum_pitch_env); //less than .5 the pitch will rise, great and it will drop
 
-    drum2.frequency(freq1*2); //starting freq
-    drum2.length(drum_len/3);//how long to fade out in milliseconds
-
+    //Same values used but multiplied or divided
+    drum2.frequency(freq1 * 2); //starting freq
+    drum2.length(drum_len / 3); //how long to fade out in milliseconds
     drum2.pitchMod(drum_pitch_env); //less than .5 the pitch will rise, great and it will drop
 
 
     //amp1 = analogRead(A2) / 4095.0; //0-1 which will cause clipping
-    amp1 = .7;
-    mixer1.gain(0, 0);
-    mixer1.gain(1, 0);
-    mixer1.gain(2, amp1);
-    mixer1.gain(3, amp1);
+    amp1 = .7; //seems to be as loud as they can go without clipping
+    mixer1.gain(0, 0); //waveform1
+    mixer1.gain(1, 0); //waveform2
+    mixer1.gain(2, amp1); //drum1
+    mixer1.gain(3, amp1); //drum2
   }
 
 
@@ -188,7 +191,7 @@ void loop() {
     //reduce these values exponentially
     // I picked some values that looked good for the sounds. you could control them with the amplitude of the sound directly with peak https://www.pjrc.com/teensy/gui/?info=AudioAnalyzePeak
     drum1_fade *= .75;
-    drum2_fade *= .85;
+    drum2_fade *= .75;
 
     //This isn't really necessary but shows how to turn them off when they get bellow a set level
     if (drum1_fade < .05) {
@@ -197,10 +200,13 @@ void loop() {
     if (drum2_fade < .05) {
       drum2_fade = 0;
     }
+
+    //LEDs 0 - 9
     for (byte led_select = 0; led_select < 10; led_select++) {
       set_LED(led_select, .25, 1, drum1_fade);
     }
 
+    //LEDs 9-19
     for (byte led_select = 10; led_select < 19; led_select++) {
       set_LED(led_select, .4, 1, drum2_fade);
     }

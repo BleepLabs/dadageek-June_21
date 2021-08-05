@@ -1,7 +1,10 @@
 /*
-  Basic audio code
-  Smooth and fscale are below the loop also
+  The drum machine works just like before
+  A touch sensor is added that can also trigger the sounds
+ 
 */
+
+
 #include <Audio.h>
 #include <Wire.h>
 #include <SPI.h>
@@ -31,7 +34,7 @@ AudioConnection          patchCord5(mixer1, dac1);
 
 //set the number of buttons and the pins they are connected to
 #define NUM_BUTTONS 4 //a define is jsut a replacement. It can't be changed. You can use it to set the size of an array. A normal variable can't do that
-const int BUTTON_PINS[NUM_BUTTONS] = {2, 5, 9, 12};
+const int BUTTON_PINS[NUM_BUTTONS] = {2, 5, 9, 12}; //the pin each button is connected to
 Bounce * buttons = new Bounce[NUM_BUTTONS];
 #define BOUNCE_LOCK_OUT //THis is the better way to use bounce with audio https://github.com/thomasfredericks/Bounce2#lock-out-interva
 
@@ -79,9 +82,10 @@ int drum_index;
 int drum_bank1_mode;
 int drum_bank2_mode;
 int prev_touch1;
+
 int touch1;
-int touch1_threshold = 3500;
-int touch1_lower_threshold;;
+int touch1_upper_threshold = 3500; //picked after looking at the output values
+int touch1_lower_threshold;
 
 void setup() {
 
@@ -138,8 +142,7 @@ void setup() {
   mixer1.gain(1, .5);
   mixer1.gain(2, .5);
   mixer1.gain(3, .5);
-
-  touch1_lower_threshold = touch1_threshold * .98;
+  
 } //setup is over
 
 void loop() {
@@ -212,10 +215,19 @@ void loop() {
 
   prev_touch1 = touch1;
   touch1 = touchRead(0);
-  if (touch1 > touch1_threshold && prev_touch1 < (touch1_lower_threshold)) {
+  
+  //Having a different upper and lower means the reading will have to jump a gap
+  // to trigger the sound. otherwise they might start to trigger wildly when you finger is close to it
+  // This doesn't completely solve the problem but it's a start
+  touch1_lower_threshold = touch1_upper_threshold * .98;  //you could also just subtract or put in another value
+  
+  if (touch1 > touch1_upper_threshold && prev_touch1 < (touch1_lower_threshold)) {
     drum2.noteOn();
     drum1.noteOn();
-    touch1_data = touch1 - touch1_threshold;
+    //rather than just using touch1 to modulate another value, we only use whats above the threshold
+    // as this number will have more variation and be easier to work with
+    // touch1 will be from 0-4000 or so while touch1_data will be 0-500ish
+    touch1_data = touch1 - touch1_upper_threshold; 
     Serial.print(touch1_data);
     Serial.println();
   }
@@ -224,7 +236,8 @@ void loop() {
   if (current_time - prev_time[2] > 5) { //slowing  down analog reads a little makes them less noisy
     prev_time[2] = current_time;
 
-    freq1 = (analogRead(A0) / 4.0) + (seq_data * 4) + (touch1_data); //0-1000ish
+    //three values changing the pitch
+    freq1 = (analogRead(A0) / 4.0) + (seq_data * 4) + (touch1_data); 
 
     note_select2 = map(analogRead(A1), 0, 4095, 40, 80);
     freq2 = chromatic[note_select2];
@@ -289,7 +302,7 @@ void loop() {
     prev_time[0] = current_time;
     Serial.print(touch1_lower_threshold);
     Serial.print(" ");
-    Serial.print(touch1_threshold);
+    Serial.print(touch1_upper_threshold);
     Serial.print(" ");
     Serial.print(touch1);
     Serial.println();

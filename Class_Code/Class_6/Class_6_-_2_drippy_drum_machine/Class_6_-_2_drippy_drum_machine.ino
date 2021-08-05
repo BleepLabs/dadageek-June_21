@@ -1,7 +1,8 @@
 /*
-  Basic audio code
-  Smooth and fscale are below the loop also
+  Using an array to play different drum patterns
 */
+
+
 #include <Audio.h>
 #include <Wire.h>
 #include <SPI.h>
@@ -62,11 +63,12 @@ float amp1, amp2;
 float drum1_fade, drum2_fade;
 float drum_len;
 float drum_pitch_env;
-int seq_data;
 
+//These arrays have two dimentions
+// You can think of the number in the fist [] decides the y and the second [] decides the x 
 int drum_bank1[2][16] = {
-  {20, 0, 0, 0, 30, 48, 0, 0, 46, 0, 0, 0, 10, 0, 100, 0},
-  {0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0},
+  {1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0},
+  {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
 };
 
 int drum_bank2[2][16] = {
@@ -144,12 +146,13 @@ void loop() {
   }
 
   if ( buttons[2].fell() ) {
-    drum_bank1_mode++;
+    drum_bank1_mode++; //increment this value each time the third button is pressed
     if (drum_bank1_mode > 2) {
-      drum_bank1_mode = 0;
+      drum_bank1_mode = 0; 
     }
   }
 
+  //the original buttons that played the sound still work
   if ( buttons[0].fell() ) {
     drum1.noteOn();
     drum1_fade = 1.0;
@@ -162,25 +165,29 @@ void loop() {
 
   if (buttons[0].read() == 0) {
     //do something while the button on the left is held down
+    //drum1.noteOn(); // you don't want this here as it will keep restarting the sound every loop
   }
 
 
-  if (current_time - prev_time[3] > 110) {
+  if (current_time - prev_time[3] > 100) { //100 was picked bc it sounded good. This could be changed w a pot
     prev_time[3] = current_time;
 
-    drum_index++;
+    drum_index++;  //pay position of the array's "x" will we be looking at
     if (drum_index > 15) {
-      drum_index = 0;
+      drum_index = 0; 
     }
 
-    if (drum_bank1_mode == 1) {
-      if (drum_bank1[0][drum_index] > 0) {
+    // in this mode we play the 0 "y" location of the array
+    if (drum_bank1_mode == 1) { 
+      //if the value at the 0 "y" position and drum_index "x" position is 1 play the drum
+      if (drum_bank1[0][drum_index] == 1) {
         drum1.noteOn();
-        seq_data = drum_bank1[0][drum_index];
         drum1_fade = .5;
       }
     }
 
+    // Here the 1 "y" location of the array is used
+    // other things like pitch or LEDcolor could be altered in the different modes too
     if (drum_bank1_mode == 2) {
       if (drum_bank1[1][drum_index] == 1) {
         drum1.noteOn();
@@ -188,6 +195,9 @@ void loop() {
       }
     }
 
+    //there is no "y" == 0 mode so that drum won't play when drum_bank1_mode==0
+
+    //same thing for the other sound
     if (drum_bank1_mode == 1) {
       if (drum_bank2[0][drum_index] == 1) {
         drum2.noteOn();
@@ -206,12 +216,12 @@ void loop() {
 
   if (current_time - prev_time[2] > 5) { //slowing  down analog reads a little makes them less noisy
     prev_time[2] = current_time;
-    freq1 = (analogRead(A0) / 4.0) + (seq_drum_len * 4); //0-1000ish
+    freq1 = analogRead(A0) / 4.0; //0-1000ish
 
     note_select2 = map(analogRead(A1), 0, 4095, 40, 80);
     freq2 = chromatic[note_select2];
 
-    drum_len = (analogRead(A1) / 4.0);
+    drum_len = analogRead(A1) / 4.0;
     drum_pitch_env = analogRead(A2) / 4095.0;
     waveform1.frequency(freq1);
     waveform2.frequency(freq2);
@@ -225,7 +235,6 @@ void loop() {
     drum2.length(drum_len / 3); //how long to fade out in milliseconds
 
     drum2.pitchMod(drum_pitch_env); //less than .5 the pitch will rise, great and it will drop
-
 
     //amp1 = analogRead(A2) / 4095.0; //0-1 which will cause clipping
     amp1 = .7;
