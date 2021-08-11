@@ -69,7 +69,7 @@ int button1, button2, button3, button4, enc_button;
 unsigned long bank_erase_timer;
 int bank_erase;
 
-int seq1[20] = {0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+float seq1[20] = {0, 0, 0, 0, .25, 0, 0, 0, 0, .5, 0, 0, 0, 0, 1, 0, 0, 0, 0, .6};
 int seq1_order[6] = {9, 4, 14, 9, 4, 19};
 
 int seq_timer, seq_location;
