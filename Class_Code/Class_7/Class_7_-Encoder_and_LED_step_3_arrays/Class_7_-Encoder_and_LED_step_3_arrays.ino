@@ -134,6 +134,14 @@ void loop() {
     bright_bank[led_position] = bright_pot;
   }
 
+  if ( buttons[3].fell() ) {
+    for (byte f = 0; f < 20; f++) {
+      hue_bank[f] = 0;
+      sat_bank[f] = 0;
+      bright_bank[f] = 0;
+    }
+  }
+
   if (current_time - prev_time[0] > 33) { //33 milliseconds is about 30 Hz, aka 30 fps
     prev_time[0] = current_time;
 
