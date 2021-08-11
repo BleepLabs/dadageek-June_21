@@ -149,7 +149,6 @@ void loop() {
     sat_pot = analogRead(A1) / 4095.0;
     bright_pot = analogRead(A2) / 4095.0;
 
-
     for (byte m = 0; m < 20; m++) {
       set_LED(m, hue_bank[m], sat_bank[m], bright_bank[m]); //turn all lights off
     }
