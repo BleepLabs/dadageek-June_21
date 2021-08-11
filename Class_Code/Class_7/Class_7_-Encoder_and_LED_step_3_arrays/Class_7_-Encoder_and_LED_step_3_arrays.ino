@@ -141,17 +141,9 @@ void loop() {
     sat_pot = analogRead(A1) / 4095.0;
     bright_pot = analogRead(A2) / 4095.0;
 
-    for (byte p = 0; p < 20; p++) {
-      Serial.print(hue_bank[p]);
-      Serial.print(" ");
-
-    }
-    Serial.println();
-
-
 
     for (byte m = 0; m < 20; m++) {
-      set_LED(m, 0, 0, 0); //turn all lights off
+      set_LED(m, hue_bank[m], sat_bank[m], bright_bank[m]); //turn all lights off
     }
 
     set_LED(led_position, hue_pot, sat_pot, bright_pot);
