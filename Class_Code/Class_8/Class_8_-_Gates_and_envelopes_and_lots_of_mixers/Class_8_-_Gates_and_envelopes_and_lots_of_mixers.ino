@@ -1,7 +1,7 @@
 /*
-  Using buttons to control envelopes 
+  Playing two drum sound with buttons
+  Three pots are used to change their sound
 */
-
 #include <Audio.h>
 #include <Wire.h>
 #include <SPI.h>
@@ -9,22 +9,39 @@
 #include <SerialFlash.h>
 
 // GUItool: begin automatically generated code
-AudioSynthSimpleDrum     drum1;          //xy=127.00572204589844,327.9999141693115
-AudioSynthWaveform       waveform2;      //xy=128.0057144165039,259.999960899353
-AudioSynthWaveform       waveform1;      //xy=137.00570678710938,181.9999771118164
-AudioSynthSimpleDrum     drum2;          //xy=239.0057144165039,387.99999618530273
+AudioSynthWaveform       waveform3;      //xy=95.00569152832031,505.0056838989258
+AudioSynthWaveform       waveform4;      //xy=102.00569152832031,557.0056838989258
+AudioSynthWaveform       waveform2;      //xy=104.0057144165039,245.99995613098145
+AudioSynthWaveform       waveform1;      //xy=109.00571060180664,155.99994277954102
+AudioSynthNoiseWhite     noise1;         //xy=157.0056915283203,417.0056838989258
+AudioSynthSimpleDrum     drum2;          //xy=167.00570678710938,347.9999771118164
+AudioSynthSimpleDrum     drum1;          //xy=168.0057373046875,305.9998588562012
+AudioMixer4              mixer4;         //xy=267.0057067871094,538.0056457519531
 AudioEffectEnvelope      envelope2;      //xy=286.0056838989258,269.0056371688843
-AudioEffectEnvelope      envelope1;      //xy=291.00567626953125,202.00563144683838
-AudioMixer4              mixer1;         //xy=445.0056495666504,313.99991512298584
-AudioOutputAnalog        dac1;           //xy=610.0056304931641,316.9999771118164
-AudioConnection          patchCord1(drum1, 0, mixer1, 2);
-AudioConnection          patchCord2(waveform2, envelope2);
-AudioConnection          patchCord3(waveform1, envelope1);
-AudioConnection          patchCord4(drum2, 0, mixer1, 3);
-AudioConnection          patchCord5(envelope2, 0, mixer1, 1);
-AudioConnection          patchCord6(envelope1, 0, mixer1, 0);
-AudioConnection          patchCord7(mixer1, dac1);
+AudioEffectEnvelope      envelope3;      //xy=297.0057067871094,432.00565338134766
+AudioEffectEnvelope      envelope4;      //xy=302.0056915283203,471.0056571960449
+AudioEffectEnvelope      envelope1;      //xy=311.00566482543945,164.0056014060974
+AudioMixer4              mixer1;         //xy=484.00564193725586,316.9998588562012
+AudioMixer4              mixer2;         //xy=493.0056381225586,445.00557136535645
+AudioMixer4              mixer3;         //xy=661.0056648254395,370.00563049316406
+AudioOutputAnalog        dac1;           //xy=808.0055465698242,328.9999189376831
+AudioConnection          patchCord1(waveform3, 0, mixer4, 0);
+AudioConnection          patchCord2(waveform4, 0, mixer4, 1);
+AudioConnection          patchCord3(waveform2, envelope2);
+AudioConnection          patchCord4(waveform1, envelope1);
+AudioConnection          patchCord5(noise1, envelope3);
+AudioConnection          patchCord6(drum2, 0, mixer1, 3);
+AudioConnection          patchCord7(drum1, 0, mixer1, 2);
+AudioConnection          patchCord8(mixer4, envelope4);
+AudioConnection          patchCord9(envelope2, 0, mixer1, 1);
+AudioConnection          patchCord10(envelope3, 0, mixer2, 0);
+AudioConnection          patchCord11(envelope4, 0, mixer2, 1);
+AudioConnection          patchCord12(envelope1, 0, mixer1, 0);
+AudioConnection          patchCord13(mixer1, 0, mixer3, 0);
+AudioConnection          patchCord14(mixer2, 0, mixer3, 1);
+AudioConnection          patchCord15(mixer3, dac1);
 // GUItool: end automatically generated code
+
 
 
 
@@ -103,6 +120,10 @@ void setup() {
   waveform1.begin(1, 220, WAVEFORM_SINE);
   waveform2.begin(1, chromatic[57], WAVEFORM_SINE); //play 440.0 A4
 
+  waveform3.begin(1, 220, WAVEFORM_BANDLIMIT_SAWTOOTH);
+  waveform4.begin(1, chromatic[57], WAVEFORM_BANDLIMIT_SAWTOOTH); //play 440.0 A4
+
+
   //https://www.pjrc.com/teensy/gui/?info=AudioSynthSimpleDrum
   drum1.frequency(80); //starting freq
   drum1.length(100);//how long to fade out in milliseconds
@@ -117,24 +138,22 @@ void setup() {
   //This doesn't mean the all the gains should add up to 1.0, but it's good to start that way and increase the volume to see what works.
   //gain(input 0-3,amplitude 0-1.0)
   //amplitude can go from -32766.0 to 32767.0 but usually we're just attenuating, not amplifying by 30000. Negative numbers flip the phase
-  mixer1.gain(0, .5);
-  mixer1.gain(1, .5);
-  mixer1.gain(2, .5);
-  mixer1.gain(3, .5);
+  amp1 = .15;
+  mixer1.gain(0, amp1);
+  mixer1.gain(1, amp1);
+  mixer1.gain(2, amp1);
+  mixer1.gain(3, amp1);
 
-/*
-The ADSR envelope is comprised of 4 stages that start with  noteOn
+  mixer2.gain(0, amp1);
+  mixer2.gain(1, amp1);
 
-Attack time - How long it takes for volume to reach its peak, 1.0. As soon as the "noteOn" executed the attack level
-  begin to rise. 1 is the lowest setting.
-Decay time - After reaching this peak how long does it take to go down to the sustain level.
-  This is used to create percussive or plucked sounds.
-Sustain level - This is the level the envelope rests after the decay time has elapsed but noteOff has not been executed  
-  That means while the key is still held down the volume will stay at this level. 
-Release time - Once noteOff happens the release begins. This gradually takes the value down to 0, quickly or slowly fading
-  out our sound.
+  mixer3.gain(0, 1);
+  mixer3.gain(1, 1);
 
-*/
+  mixer4.gain(0, .5);
+  mixer4.gain(1, .5);
+
+  noise1.amplitude(1);
 
   envelope1.attack(500); //milliseconds
   envelope1.decay(0);
@@ -145,6 +164,17 @@ Release time - Once noteOff happens the release begins. This gradually takes the
   envelope2.decay(0);
   envelope2.sustain(1.0);
   envelope2.release(1);
+
+  envelope3.attack(1); //milliseconds
+  envelope3.decay(50);
+  envelope3.sustain(.2);
+  envelope3.release(100);
+
+
+  envelope4.attack(50); //milliseconds
+  envelope4.decay(0);
+  envelope4.sustain(1.0);
+  envelope4.release(1000);
 
 
 } //setup is over
@@ -164,25 +194,47 @@ void loop() {
     }
   }
 
-  //just like the drum notOn, the envelope noteOn and off should only happen once, not repeatedly 
-  if ( buttons[2].fell() ) {
+
+
+  if ( buttons[0].fell() ) {
     envelope1.noteOn();
+    Serial.println(" on1");
+  }
+
+  if ( buttons[0].rose() ) {
+    envelope1.noteOff();
+    Serial.println("  off1");
+  }
+
+  
+  if ( buttons[1].fell() ) {
+    envelope2.noteOn();
     Serial.println(" on2");
   }
 
-  if ( buttons[2].rose() ) {
-    envelope1.noteOff();
+  if ( buttons[1].rose() ) {
+    envelope2.noteOff();
     Serial.println("  off2");
   }
 
-  if ( buttons[3].fell() ) {
-    envelope2.noteOn();
+  if ( buttons[2].fell() ) {
+    envelope3.noteOn();
     Serial.println(" on3");
   }
 
-  if ( buttons[3].rose() ) {
-    envelope2.noteOff();
+  if ( buttons[2].rose() ) {
+    envelope3.noteOff();
     Serial.println("  off3");
+  }
+
+  if ( buttons[3].fell() ) {
+    envelope4.noteOn();
+    Serial.println(" on4");
+  }
+
+  if ( buttons[3].rose() ) {
+    envelope4.noteOff();
+    Serial.println("  off4");
   }
 
 
@@ -215,6 +267,8 @@ void loop() {
     waveform1.frequency(freq1);
     waveform2.frequency(freq2);
 
+    waveform3.frequency(freq1);
+    waveform4.frequency(freq2);
 
     drum1.frequency(freq1); //starting freq
     drum1.length(drum_len);//how long to fade out in milliseconds
@@ -227,11 +281,11 @@ void loop() {
 
 
     //amp1 = analogRead(A2) / 4095.0; //0-1 which will cause clipping
-    amp1 = .25; //seems to be as loud as they can go without clipping
-    mixer1.gain(0, amp1); //waveform1
-    mixer1.gain(1, amp1); //waveform2
-    mixer1.gain(2, amp1); //drum1
-    mixer1.gain(3, amp1); //drum2
+    //    amp1 = .25; //seems to be as loud as they can go without clipping
+    //    mixer1.gain(0, amp1); //waveform1
+    //    mixer1.gain(1, amp1); //waveform2
+    //    mixer1.gain(2, amp1); //drum1
+    //    mixer1.gain(3, amp1); //drum2
   }
 
 
